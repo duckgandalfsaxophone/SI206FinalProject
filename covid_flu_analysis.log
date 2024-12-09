@@ -1,0 +1,59 @@
+2024-12-09 02:23:55,121 - INFO - Starting COVID and Flu analysis pipeline
+2024-12-09 02:23:55,123 - ERROR - Database setup failed: No module named 'pandas'
+2024-12-09 02:23:55,123 - ERROR - Failed to set up database. Exiting.
+2024-12-09 02:35:55,265 - INFO - Starting COVID and Flu analysis pipeline
+2024-12-09 02:35:55,499 - INFO - Database setup successful
+2024-12-09 02:35:55,499 - INFO - Starting data collection process...
+2024-12-09 02:35:57,274 - INFO - Data collection completed successfully
+2024-12-09 02:35:57,439 - INFO - Starting visualization generation...
+2024-12-09 02:35:57,440 - ERROR - Visualization creation failed: ufunc 'add' did not contain a loop with signature matching types (dtype('int64'), dtype('<U2')) -> None
+2024-12-09 02:35:57,440 - ERROR - Failed to create visualizations. Exiting.
+2024-12-09 02:55:54,637 - INFO - Starting COVID and Flu analysis pipeline
+2024-12-09 02:55:55,091 - INFO - Database setup successful
+2024-12-09 02:55:55,091 - INFO - Starting data collection process...
+2024-12-09 02:55:56,792 - INFO - Data collection completed successfully
+2024-12-09 02:55:57,014 - INFO - Starting visualization generation...
+2024-12-09 02:56:07,289 - INFO - Visualizations created successfully
+2024-12-09 02:56:07,290 - INFO - Analysis pipeline completed successfully in 0:00:12.653003
+2024-12-09 02:56:24,018 - INFO - Starting COVID and Flu analysis pipeline
+2024-12-09 02:56:24,237 - INFO - Database setup successful
+2024-12-09 02:56:24,237 - INFO - Starting data collection process...
+2024-12-09 02:56:25,647 - INFO - Data collection completed successfully
+2024-12-09 02:56:25,816 - INFO - Starting visualization generation...
+2024-12-09 02:57:03,012 - INFO - Visualizations created successfully
+2024-12-09 02:57:03,012 - INFO - Analysis pipeline completed successfully in 0:00:38.994823
+2024-12-09 02:57:04,778 - INFO - Starting COVID and Flu analysis pipeline
+2024-12-09 02:57:05,119 - INFO - Database setup successful
+2024-12-09 02:57:05,119 - INFO - Starting data collection process...
+2024-12-09 02:57:06,531 - INFO - Data collection completed successfully
+2024-12-09 02:57:06,727 - INFO - Starting visualization generation...
+2024-12-09 02:57:14,913 - INFO - Visualizations created successfully
+2024-12-09 02:57:14,913 - INFO - Analysis pipeline completed successfully in 0:00:10.135093
+2024-12-09 03:08:53,083 - INFO - Starting COVID and Flu analysis pipeline
+2024-12-09 03:08:53,343 - INFO - Database setup successful
+2024-12-09 03:08:53,343 - INFO - Starting data collection process...
+2024-12-09 03:08:55,146 - INFO - Data collection completed successfully
+2024-12-09 03:08:55,307 - INFO - Starting visualization generation...
+2024-12-09 03:09:00,598 - INFO - Visualizations created successfully
+2024-12-09 03:09:00,598 - INFO - Analysis pipeline completed successfully in 0:00:07.515401
+2024-12-09 03:14:17,058 - INFO - Starting COVID and Flu analysis pipeline
+2024-12-09 03:14:17,278 - INFO - Database setup successful
+2024-12-09 03:14:17,278 - INFO - Starting data collection process...
+2024-12-09 03:14:18,997 - INFO - Data collection completed successfully
+2024-12-09 03:14:19,156 - INFO - Starting visualization generation...
+2024-12-09 03:14:28,761 - INFO - Visualizations created successfully
+2024-12-09 03:14:28,762 - INFO - Analysis pipeline completed successfully in 0:00:11.703953
+2024-12-09 03:14:38,524 - INFO - Starting COVID and Flu analysis pipeline
+2024-12-09 03:14:38,824 - INFO - Database setup successful
+2024-12-09 03:14:38,824 - INFO - Starting data collection process...
+2024-12-09 03:14:40,431 - INFO - Data collection completed successfully
+2024-12-09 03:14:40,586 - INFO - Starting visualization generation...
+2024-12-09 03:15:01,352 - INFO - Visualizations created successfully
+2024-12-09 03:15:01,353 - INFO - Analysis pipeline completed successfully in 0:00:22.829264
+2024-12-09 03:15:08,121 - INFO - Starting COVID and Flu analysis pipeline
+2024-12-09 03:15:08,421 - INFO - Database setup successful
+2024-12-09 03:15:08,421 - INFO - Starting data collection process...
+2024-12-09 03:15:09,816 - INFO - Data collection completed successfully
+2024-12-09 03:15:09,983 - INFO - Starting visualization generation...
+2024-12-09 03:16:09,505 - INFO - Visualizations created successfully
+2024-12-09 03:16:09,506 - INFO - Analysis pipeline completed successfully in 0:01:01.385462

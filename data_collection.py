@@ -129,7 +129,7 @@ def fetch_and_store_flu_data():
     epiweeks = "202010-202310"
     base_url = "https://api.delphi.cmu.edu/epidata/fluview/"
     params = {"regions": ",".join(regions), "epiweeks": epiweeks, "auth": FLU_API_KEY}
-    
+
     try:
         response = requests.get(base_url, params=params)
         response.raise_for_status()
@@ -137,13 +137,18 @@ def fetch_and_store_flu_data():
         
         if data["result"] == 1:
             df = pd.DataFrame(data["epidata"])
+            
+            # Generate the `date` column from the `epiweek`
             df["date"] = df["epiweek"].apply(
                 lambda ew: Week(int(str(ew)[:4]), int(str(ew)[4:])).startdate().strftime('%Y-%m-%d')
             )
+            
+            # Add `week_id` derived from `date`
             df["week_id"] = df["date"].apply(lambda d: get_week_id(d))
             
+            # Save the data with `date` column to the database
             conn = get_db_connection()
-            df[["region", "week_id", "num_ili"]].to_sql(
+            df[["region", "date", "week_id", "num_ili"]].to_sql(
                 "flu_data_march_2020_to_2023_region_date_ili",
                 conn,
                 if_exists="replace",
