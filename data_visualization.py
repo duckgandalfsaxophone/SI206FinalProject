@@ -95,7 +95,7 @@ def visualize_all_data():
         if not michigan_covid_df.empty:
             plot_cases_with_bars(
                 michigan_covid_df, "week_id", "weekly_cases", "Michigan COVID Cases", "blue",
-                "Michigan COVID-19 Cases, Highlighting Winter and Summer Months",
+                "Michigan Weekly New COVID-19 Cases, Highlighting Winter and Summer Months",
                 "Weekly COVID-19 Cases", start_date, end_date, seasons
             )
         else:
@@ -117,7 +117,7 @@ def visualize_all_data():
         if not national_covid_df.empty:
             plot_cases_with_bars(
                 national_covid_df, "week_id", "weekly_cases", "National COVID Cases", "green",
-                "National COVID-19 Cases, Highlighting Winter and Summer Months",
+                "National Weekly New COVID-19 Cases, Highlighting Winter and Summer Months",
                 "Weekly COVID-19 Cases", start_date, end_date, seasons
             )
         else:
@@ -140,7 +140,7 @@ def visualize_all_data():
         if not michigan_flu_df.empty:
             plot_cases_with_bars(
                 michigan_flu_df, "date", "num_ili", "Michigan Flu Cases", "red",
-                "Michigan Flu Cases, Highlighting Winter and Summer Months",
+                "Michigan Weekly New Flu Cases, Highlighting Winter and Summer Months",
                 "Weekly Flu Cases", start_date, end_date, seasons
             )
         else:
