@@ -209,7 +209,7 @@ def visualize_all_data():
                 michigan_covid_df, "week_id", "weekly_cases",
                 "Michigan COVID Cases", "blue",
                 "Michigan Weekly New COVID-19 Cases, Highlighting Winter and Summer Months",
-                "Weekly COVID-19 Cases", start_date, end_date, seasons
+                "Number of Weekly New COVID-19 Cases", start_date, end_date, seasons
             )
         
         # Process and visualize National COVID data
@@ -220,7 +220,7 @@ def visualize_all_data():
                 national_covid_df, "week_id", "weekly_cases",
                 "National COVID Cases", "green",
                 "National Weekly New COVID-19 Cases, Highlighting Winter and Summer Months",
-                "Weekly COVID-19 Cases", start_date, end_date, seasons
+                "Number of Weekly New COVID-19 Cases", start_date, end_date, seasons
             )
         
         # Process and visualize Michigan Flu data
@@ -231,7 +231,7 @@ def visualize_all_data():
                 michigan_flu_df, "week_id", "total_ili",
                 "Michigan Flu Cases", "red",
                 "Michigan Weekly New Flu Cases, Highlighting Winter and Summer Months",
-                "Weekly Flu Cases", start_date, end_date, seasons
+                "Number of Weekly New Flu Cases", start_date, end_date, seasons
             )
         
         # Process and visualize National Flu data
@@ -242,7 +242,7 @@ def visualize_all_data():
                 national_flu_df, "week_id", "total_ili",
                 "National Flu Cases", "purple",
                 "National Weekly New Flu Cases, Highlighting Winter and Summer Months",
-                "Weekly Flu Cases", start_date, end_date, seasons
+                "Number of Weekly New Flu Cases", start_date, end_date, seasons
             )
         
         logging.info("All visualizations completed successfully")
