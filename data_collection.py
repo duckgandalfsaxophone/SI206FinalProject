@@ -45,7 +45,7 @@ def create_database():
         
         # Create weather tables
         conn.execute("""
-        CREATE TABLE IF NOT EXISTS weather_data (
+        CREATE TABLE IF NOT EXISTS national_weather_data (
             time TEXT PRIMARY KEY,
             tavg REAL,
             tmin REAL,
@@ -54,7 +54,7 @@ def create_database():
         """)
         
         conn.execute("""
-        CREATE TABLE IF NOT EXISTS michigan_weather (
+        CREATE TABLE IF NOT EXISTS michigan_weather_data (
             week_id INTEGER PRIMARY KEY,
             tavg_f REAL,
             tmin_f REAL,
@@ -64,28 +64,28 @@ def create_database():
         
         # Create COVID tables
         conn.execute("""
-        CREATE TABLE IF NOT EXISTS raw_michigan_covid_data (
+        CREATE TABLE IF NOT EXISTS daily_michigan_covid_data (
             date TEXT PRIMARY KEY,
             cases INTEGER
         )
         """)
         
         conn.execute("""
-        CREATE TABLE IF NOT EXISTS michigan_covid_data (
+        CREATE TABLE IF NOT EXISTS weekly_michigan_covid_data (
             week_id INTEGER PRIMARY KEY,
             weekly_cases INTEGER
         )
         """)
         
         conn.execute("""
-        CREATE TABLE IF NOT EXISTS raw_national_covid_data (
+        CREATE TABLE IF NOT EXISTS daily_national_covid_data (
             date TEXT PRIMARY KEY,
             cases INTEGER
         )
         """)
         
         conn.execute("""
-        CREATE TABLE IF NOT EXISTS national_covid_data (
+        CREATE TABLE IF NOT EXISTS weekly_national_covid_data (
             week_id INTEGER PRIMARY KEY,
             weekly_cases INTEGER
         )
@@ -165,7 +165,7 @@ def process_weather_data(location, start_date, end_date, table_name):
     """
     try:
         conn = get_db_connection()
-        run_count = get_run_count("weather_data")
+        run_count = get_run_count("national_weather_data")
         
         # Check if we already have complete data (run 5+)
         if run_count >= 5:
@@ -173,7 +173,7 @@ def process_weather_data(location, start_date, end_date, table_name):
             return
             
         # Get current data count
-        current_count = conn.execute("SELECT COUNT(*) FROM weather_data").fetchone()[0] or 0
+        current_count = conn.execute("SELECT COUNT(*) FROM national_weather_data").fetchone()[0] or 0
         
         # Fetch data from API
         data = Daily(location, start_date, end_date).fetch()
@@ -190,7 +190,7 @@ def process_weather_data(location, start_date, end_date, table_name):
         # Insert new daily records
         for _, row in data.iterrows():
             conn.execute("""
-            INSERT OR IGNORE INTO weather_data (time, tavg, tmin, tmax)
+            INSERT OR IGNORE INTO national_weather_data (time, tavg, tmin, tmax)
             VALUES (?, ?, ?, ?)
             """, (
                 row['time'].strftime('%Y-%m-%d'),
@@ -207,7 +207,7 @@ def process_weather_data(location, start_date, end_date, table_name):
                 AVG((tavg * 9/5) + 32) AS tavg_f,
                 AVG((tmin * 9/5) + 32) AS tmin_f,
                 AVG((tmax * 9/5) + 32) AS tmax_f
-            FROM weather_data
+            FROM national_weather_data
             WHERE time BETWEEN ? AND ?
             GROUP BY week_id
             ORDER BY week_id
@@ -224,10 +224,10 @@ def process_weather_data(location, start_date, end_date, table_name):
         conn.commit()
         
         # Print status
-        new_count = conn.execute("SELECT COUNT(*) FROM weather_data").fetchone()[0]
+        new_count = conn.execute("SELECT COUNT(*) FROM national_weather_data").fetchone()[0]
         weekly_count = conn.execute(f'SELECT COUNT(*) FROM "{table_name}"').fetchone()[0]
         
-        increment_run_count("weather_data")
+        increment_run_count("national_weather_data")
         current_run = run_count + 1
         print(f"Weather data processing complete (Run {current_run}):")
         print(f"- Previous daily records: {current_count}")
@@ -255,8 +255,8 @@ def store_covid_data(data, table_name):
             return
             
         # Get current data count
-        raw_table_name = f"raw_{table_name}"
-        current_count = conn.execute(f'SELECT COUNT(*) FROM "{raw_table_name}"').fetchone()[0] or 0
+        daily_table = "daily_" + table_name.replace("weekly_", "")
+        current_count = conn.execute(f'SELECT COUNT(*) FROM "{daily_table}"').fetchone()[0] or 0
         
         # Process the data
         df = pd.DataFrame(data)
@@ -269,7 +269,7 @@ def store_covid_data(data, table_name):
         # Insert new daily records
         for _, row in df.iterrows():
             conn.execute(f"""
-            INSERT OR IGNORE INTO "{raw_table_name}" (date, cases)
+            INSERT OR IGNORE INTO "{daily_table}" (date, cases)
             VALUES (?, ?)
             """, (row['date'].strftime('%Y-%m-%d'), row.get('cases')))
         
@@ -279,7 +279,7 @@ def store_covid_data(data, table_name):
             SELECT
                 date,
                 cases - LAG(cases, 1) OVER (ORDER BY date) AS daily_cases
-            FROM "{raw_table_name}"
+            FROM "{daily_table}"
             WHERE cases IS NOT NULL
             AND date BETWEEN ? AND ?
         )
@@ -301,7 +301,7 @@ def store_covid_data(data, table_name):
         conn.commit()
         
         # Print status
-        new_count = conn.execute(f'SELECT COUNT(*) FROM "{raw_table_name}"').fetchone()[0]
+        new_count = conn.execute(f'SELECT COUNT(*) FROM "{daily_table}"').fetchone()[0]
         weekly_count = conn.execute(f'SELECT COUNT(*) FROM "{table_name}"').fetchone()[0]
         
         increment_run_count(table_name)
@@ -326,14 +326,14 @@ def fetch_and_store_michigan_covid():
     response = requests.get(url)
     if response.status_code == 200:
         data = response.json().get("actualsTimeseries", [])
-        store_covid_data(data, "michigan_covid_data")
+        store_covid_data(data, "weekly_michigan_covid_data")
 
 def fetch_and_store_national_covid():
     url = f"{COVID_BASE_URL}/country/US.timeseries.json?apiKey={COVID_API_KEY}"
     response = requests.get(url)
     if response.status_code == 200:
         data = response.json().get("actualsTimeseries", [])
-        store_covid_data(data, "national_covid_data")
+        store_covid_data(data, "weekly_national_covid_data")
 
 def fetch_and_store_flu_data():
     try:
@@ -412,7 +412,7 @@ def collect_all_data():
     
     # Collect data from all sources
     try:
-        process_weather_data(MICHIGAN_LOCATION, START_DATE, END_DATE, "michigan_weather")
+        process_weather_data(MICHIGAN_LOCATION, START_DATE, END_DATE, "michigan_weather_data")
         fetch_and_store_michigan_covid()
         fetch_and_store_national_covid()
         fetch_and_store_flu_data()
