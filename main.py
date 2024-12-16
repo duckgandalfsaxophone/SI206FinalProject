@@ -1,142 +1,264 @@
-import sys
+import pandas as pd
+import matplotlib.pyplot as plt
+from matplotlib.ticker import FuncFormatter
+import sqlite3
+import os
 import logging
 from datetime import datetime
-import sqlite3
-import pandas as pd
-from data_collection import get_db_connection, create_database, get_run_count
 
-# Set up logging
+# Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('covid_flu_analysis.log'),
-        logging.StreamHandler(sys.stdout)
-    ]
+    format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
-def get_all_table_counts():
-    """Get row counts for all tables"""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-    tables = cursor.fetchall()
-    
-    counts = {}
-    for (table_name,) in tables:
-        try:
-            result = cursor.execute(f'SELECT COUNT(*) FROM "{table_name}"').fetchone()
-            counts[table_name] = result[0] if result else 0
-        except Exception as e:
-            logging.error(f"Error getting count for table {table_name}: {str(e)}")
-            counts[table_name] = -1
-    
-    conn.close()
-    return counts
-
-def setup_database():
-    """Initialize the database and required tables"""
+def get_db_connection():
+    """Get database connection using absolute path"""
     try:
-        if not create_database():
-            logging.error("Failed to create database")
-            return False
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        db_path = os.path.join(script_dir, "final_project.db")
+        
+        if not os.path.exists(db_path):
+            logging.error(f"Database not found at: {db_path}")
+            raise FileNotFoundError(f"Database file not found at {db_path}")
             
-        conn = get_db_connection()
-        # Ensure foreign keys are enabled
-        conn.execute("PRAGMA foreign_keys = ON;")
-        conn.close()
-        logging.info("Database setup successful")
-        return True
+        logging.info(f"Connecting to database at: {db_path}")
+        return sqlite3.connect(db_path)
     except Exception as e:
-        logging.error(f"Database setup failed: {str(e)}")
-        return False
-
-def collect_data():
-    """Collect data from all sources"""
-    try:
-        from data_collection import collect_all_data
-        logging.info("Starting data collection process...")
-        success = collect_all_data()
-        
-        if not success:
-            logging.error("Data collection failed")
-            return False
-        
-        # Get and log table counts after collection
-        table_counts = get_all_table_counts()
-        logging.info("Data collection completed. Current table row counts:")
-        for table, count in table_counts.items():
-            logging.info(f"- {table}: {count} rows")
-            
-        return True
-    except Exception as e:
-        logging.error(f"Data collection failed: {str(e)}")
-        return False
-
-def create_visualizations():
-    """Generate all visualizations"""
-    try:
-        from data_visualization import visualize_all_data
-        logging.info("Starting visualization generation...")
-        visualize_all_data()
-        logging.info("Visualizations created successfully")
-        return True
-    except Exception as e:
-        logging.error(f"Visualization creation failed: {str(e)}")
-        return False
-
-def main():
-    """Main execution function"""
-    start_time = datetime.now()
-    logging.info("Starting COVID and Flu analysis pipeline")
-
-    try:
-        # Setup phase
-        if not setup_database():
-            logging.error("Failed to set up database. Exiting.")
-            return
-
-        # Data collection phase
-        if not collect_data():
-            logging.error("Failed to collect data. Exiting.")
-            return
-
-        # Verify database tables
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-        tables = cursor.fetchall()
-        logging.info(f"Available tables in database: {[table[0] for table in tables]}")
-        
-        # Get and log current table counts
-        table_counts = get_all_table_counts()
-        logging.info("Current table row counts:")
-        for table, count in table_counts.items():
-            logging.info(f"- {table}: {count} rows")
-        
-        # Get the current run count
-        run_count = get_run_count("weather_data")  # Can use any of the data sources
-        
-        # Only create visualizations if we're on run 5 or later
-        if run_count >= 5:
-            logging.info("Run 5 or later detected - creating visualizations")
-            if not create_visualizations():
-                logging.error("Failed to create visualizations. Exiting.")
-                return
-        else:
-            logging.info(f"Run {run_count} - skipping visualizations until run 5")
-
-        end_time = datetime.now()
-        duration = end_time - start_time
-        logging.info(f"Analysis pipeline completed successfully in {duration}")
-
-    except Exception as e:
-        logging.error(f"Unexpected error in main: {str(e)}")
+        logging.error(f"Error connecting to database: {str(e)}")
         raise
 
+def format_with_commas(x, pos):
+    """Format numbers with comma separators"""
+    return f"{int(x):,}"
+
+def set_monthly_xticks(ax, start_date, end_date):
+    """Set x-axis ticks to show months"""
+    months = pd.date_range(start=start_date, end=end_date, freq='MS')
+    labels = [date.strftime('%b %Y') if date.month in [3, 6, 9, 12] else '' for date in months]
+    ax.set_xticks(months)
+    ax.set_xticklabels(labels, rotation=45)
+    ax.set_xlabel('Months', fontsize=14)
+
+def plot_cases_with_bars(df, x, y, label, color, title, ylabel, start_date, end_date, seasons):
+    """Create plot with cases data and seasonal highlighting"""
+    try:
+        if df.empty:
+            logging.warning(f"No data available for {label}. Skipping plot.")
+            return
+        
+        fig, ax = plt.subplots(figsize=(12, 6))
+        
+        # Plot the main data
+        ax.plot(df[x], df[y], marker='o', label=label, color=color)
+        ax.set_ylabel(ylabel, fontsize=14)
+        ax.tick_params(axis='y')
+        ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: format(int(x), ',')))
+        
+        # Set x-axis ticks and labels
+        set_monthly_xticks(ax, start_date, end_date)
+        
+        # Define season colors
+        SEASON_COLORS = {
+            "Winter Months": "#003366",
+            "Summer Months": "#660000",
+        }
+        
+        # Add seasonal highlighting
+        seen_labels = set()
+        for start, end, season_label in seasons:
+            color = SEASON_COLORS[season_label]
+            ax.axvspan(pd.to_datetime(start), pd.to_datetime(end), 
+                      color=color, alpha=0.2,
+                      label=season_label if season_label not in seen_labels else "")
+            seen_labels.add(season_label)
+        
+        # Set title and grid
+        ax.set_title(title, fontsize=16)
+        ax.grid(True, which='both', linestyle='--', linewidth=0.5)
+        
+        # Add legend
+        ax.legend(
+            loc='upper center', 
+            bbox_to_anchor=(0.5, -0.15), 
+            fontsize=10, 
+            ncol=2
+        )
+        
+        plt.tight_layout(pad=3)
+        plt.show()
+        
+    except Exception as e:
+        logging.error(f"Error creating plot for {label}: {str(e)}")
+        raise
+
+def process_covid_data(conn, table_name, region=""):
+    """Process COVID data from database with proper week_id handling"""
+    try:
+        query = f"SELECT week_id, weekly_cases FROM {table_name}"
+        logging.info(f"Executing query: {query}")
+        
+        df = pd.read_sql(query, conn)
+        if df.empty:
+            logging.warning(f"No data found in {table_name}")
+            return pd.DataFrame()
+            
+        # Convert week_id to datetime - handling both string and integer formats
+        df["week_id"] = df["week_id"].apply(
+            lambda x: pd.to_datetime(
+                f'{str(x)[:4]}-W{str(x)[4:].zfill(2)}-1', 
+                format='%Y-W%W-%w',
+                errors='coerce'
+            )
+        )
+        
+        # Filter out zero or negative cases and null dates
+        df = df[(df["weekly_cases"] > 0) & (df["week_id"].notna())]
+        
+        logging.info(f"Processed {len(df)} rows of {region} COVID data")
+        return df
+        
+    except Exception as e:
+        logging.error(f"Error processing {region} COVID data: {str(e)}")
+        raise
+
+def process_flu_data(conn, region_key):
+    """Process flu data from database with proper week_id handling"""
+    try:
+        query = """
+            SELECT week_id, SUM(num_ili) AS total_ili 
+            FROM flu_data_march_2020_to_2023 
+            WHERE region_key = ? 
+            GROUP BY week_id
+        """
+        logging.info(f"Executing flu data query for region {region_key}")
+        
+        df = pd.read_sql(query, conn, params=(region_key,))
+        if df.empty:
+            logging.warning(f"No flu data found for region {region_key}")
+            return pd.DataFrame()
+            
+        # Convert week_id to datetime - handling both string and integer formats
+        df["week_id"] = df["week_id"].apply(
+            lambda x: pd.to_datetime(
+                f'{str(x)[:4]}-W{str(x)[4:].zfill(2)}-1', 
+                format='%Y-W%W-%w',
+                errors='coerce'
+            )
+        )
+        
+        # Filter out zero or negative cases and null dates
+        df = df[(df["total_ili"] > 0) & (df["week_id"].notna())]
+        
+        logging.info(f"Processed {len(df)} rows of flu data for region {region_key}")
+        return df
+        
+    except Exception as e:
+        logging.error(f"Error processing flu data for region {region_key}: {str(e)}")
+        raise
+
+def validate_database_tables(conn):
+    """Validate that all required tables exist in the database"""
+    required_tables = [
+        'weekly_michigan_covid_data',
+        'weekly_national_covid_data',
+        'flu_data_march_2020_to_2023'
+    ]
+    
+    cursor = conn.cursor()
+    existing_tables = cursor.execute(
+        "SELECT name FROM sqlite_master WHERE type='table'"
+    ).fetchall()
+    existing_tables = [table[0] for table in existing_tables]
+    
+    missing_tables = [table for table in required_tables if table not in existing_tables]
+    
+    if missing_tables:
+        raise ValueError(f"Missing required tables: {', '.join(missing_tables)}")
+    
+    logging.info("All required tables found in database")
+
+def visualize_all_data():
+    """Generate all visualizations with error handling"""
+    conn = None
+    try:
+        # Get database connection
+        conn = get_db_connection()
+        
+        # Validate database tables
+        validate_database_tables(conn)
+        
+        # Define date range and seasons
+        start_date = "2020-03-01"
+        end_date = "2023-03-01"
+        
+        seasons = [
+            ("2020-06-01", "2020-08-31", "Summer Months"),
+            ("2020-12-01", "2021-02-28", "Winter Months"),
+            ("2021-06-01", "2021-08-31", "Summer Months"),
+            ("2021-12-01", "2022-02-28", "Winter Months"),
+            ("2022-06-01", "2022-08-31", "Summer Months"),
+            ("2022-12-01", "2023-02-28", "Winter Months"),
+        ]
+        
+        # Process and visualize Michigan COVID data
+        logging.info("Processing Michigan COVID data")
+        michigan_covid_df = process_covid_data(conn, "weekly_michigan_covid_data", "Michigan")
+        if not michigan_covid_df.empty:
+            plot_cases_with_bars(
+                michigan_covid_df, "week_id", "weekly_cases",
+                "Michigan COVID Cases", "blue",
+                "Michigan Weekly New COVID-19 Cases, Highlighting Winter and Summer Months",
+                "Weekly COVID-19 Cases", start_date, end_date, seasons
+            )
+        
+        # Process and visualize National COVID data
+        logging.info("Processing National COVID data")
+        national_covid_df = process_covid_data(conn, "weekly_national_covid_data", "National")
+        if not national_covid_df.empty:
+            plot_cases_with_bars(
+                national_covid_df, "week_id", "weekly_cases",
+                "National COVID Cases", "green",
+                "National Weekly New COVID-19 Cases, Highlighting Winter and Summer Months",
+                "Weekly COVID-19 Cases", start_date, end_date, seasons
+            )
+        
+        # Process and visualize Michigan Flu data
+        logging.info("Processing Michigan Flu data")
+        michigan_flu_df = process_flu_data(conn, 1)
+        if not michigan_flu_df.empty:
+            plot_cases_with_bars(
+                michigan_flu_df, "week_id", "total_ili",
+                "Michigan Flu Cases", "red",
+                "Michigan Weekly New Flu Cases, Highlighting Winter and Summer Months",
+                "Weekly Flu Cases", start_date, end_date, seasons
+            )
+        
+        # Process and visualize National Flu data
+        logging.info("Processing National Flu data")
+        national_flu_df = process_flu_data(conn, 2)
+        if not national_flu_df.empty:
+            plot_cases_with_bars(
+                national_flu_df, "week_id", "total_ili",
+                "National Flu Cases", "purple",
+                "National Weekly New Flu Cases, Highlighting Winter and Summer Months",
+                "Weekly Flu Cases", start_date, end_date, seasons
+            )
+        
+        logging.info("All visualizations completed successfully")
+        
+    except Exception as e:
+        logging.error(f"Error in visualization process: {str(e)}")
+        raise
+        
     finally:
-        if 'conn' in locals() and conn:
+        if conn:
             conn.close()
+            logging.info("Database connection closed")
 
 if __name__ == "__main__":
-    main()
+    try:
+        visualize_all_data()
+    except Exception as e:
+        logging.error(f"Visualization script failed: {str(e)}")
+        sys.exit(1)
