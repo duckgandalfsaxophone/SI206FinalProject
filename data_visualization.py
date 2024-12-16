@@ -160,8 +160,8 @@ def process_flu_data(conn, region_key):
 def validate_database_tables(conn):
     """Validate that all required tables exist in the database"""
     required_tables = [
-        'michigan_covid_data',
-        'national_covid_data',
+        'weekly_michigan_covid_data',
+        'weekly_national_covid_data',
         'flu_data_march_2020_to_2023'
     ]
     
@@ -203,24 +203,24 @@ def visualize_all_data():
         
         # Process and visualize Michigan COVID data
         logging.info("Processing Michigan COVID data")
-        michigan_covid_df = process_covid_data(conn, "michigan_covid_data", "Michigan")
+        michigan_covid_df = process_covid_data(conn, "weekly_michigan_covid_data", "Michigan")
         if not michigan_covid_df.empty:
             plot_cases_with_bars(
                 michigan_covid_df, "week_id", "weekly_cases",
                 "Michigan COVID Cases", "blue",
                 "Michigan Weekly New COVID-19 Cases, Highlighting Winter and Summer Months",
-                "Weekly New COVID-19 Cases", start_date, end_date, seasons
+                "Weekly COVID-19 Cases", start_date, end_date, seasons
             )
         
         # Process and visualize National COVID data
         logging.info("Processing National COVID data")
-        national_covid_df = process_covid_data(conn, "national_covid_data", "National")
+        national_covid_df = process_covid_data(conn, "weekly_national_covid_data", "National")
         if not national_covid_df.empty:
             plot_cases_with_bars(
                 national_covid_df, "week_id", "weekly_cases",
                 "National COVID Cases", "green",
                 "National Weekly New COVID-19 Cases, Highlighting Winter and Summer Months",
-                "Weekly New COVID-19 Cases", start_date, end_date, seasons
+                "Weekly COVID-19 Cases", start_date, end_date, seasons
             )
         
         # Process and visualize Michigan Flu data
@@ -231,7 +231,7 @@ def visualize_all_data():
                 michigan_flu_df, "week_id", "total_ili",
                 "Michigan Flu Cases", "red",
                 "Michigan Weekly New Flu Cases, Highlighting Winter and Summer Months",
-                "Weekly New Flu Cases", start_date, end_date, seasons
+                "Weekly Flu Cases", start_date, end_date, seasons
             )
         
         # Process and visualize National Flu data
@@ -242,7 +242,7 @@ def visualize_all_data():
                 national_flu_df, "week_id", "total_ili",
                 "National Flu Cases", "purple",
                 "National Weekly New Flu Cases, Highlighting Winter and Summer Months",
-                "Weekly New Flu Cases", start_date, end_date, seasons
+                "Weekly Flu Cases", start_date, end_date, seasons
             )
         
         logging.info("All visualizations completed successfully")
